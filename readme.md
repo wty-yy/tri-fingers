@@ -114,8 +114,8 @@ $$
 6. 我们还需要安装 RealSense™ SDK 2.0，顺着[官方教程 - Linux Distribution](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages)安装完成 `librealsense2-dkms, librealsense2-utils`，再连接摄像头，运行命令 `realsense-viewer` 看是否可以出现如下可视化界面，说明安装成功（记得把左边的摄像头功能开关打开）：
 
    <div align='center'>
-       <img src=./assets/figures/realsense_viewer1.png width=49%>
-       <img src=./assets/figures/realsense_viewer2.png width=49%>
+       <img src=./assets/figures/realsense_viewer1.png width=49%></image>
+       <img src=./assets/figures/realsense_viewer2.png width=49%></image>
    </div>
    
    
