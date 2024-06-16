@@ -142,7 +142,7 @@ $$
     <image src=./assets/figures/rviz加入按钮.png width=39%></image>
     <image src=./assets/figures/rviz加入节点.png width=19%></image>
     <image src=./assets/figures/rviz加入图像结果.png width=39%></image>
-<div/>
+</div>
 
 ##### 获取标定板
 
