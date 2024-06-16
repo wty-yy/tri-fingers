@@ -1,5 +1,7 @@
 # 三指机器人参考文档
 
+> 当前还在学习万强所完成的工作，项目完善中。。。
+
 ## 机器人硬件安装
 
 > 教程 [GitHub - open_robot_actuator_hardware](https://github.com/open-dynamic-robot-initiative/open_robot_actuator_hardware)，论文 [TriFinger: An Open-Source Robot for Learning Dexterity](https://arxiv.org/abs/2008.03596)
@@ -112,9 +114,10 @@ $$
 6. 我们还需要安装 RealSense™ SDK 2.0，顺着[官方教程 - Linux Distribution](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages)安装完成 `librealsense2-dkms, librealsense2-utils`，再连接摄像头，运行命令 `realsense-viewer` 看是否可以出现如下可视化界面，说明安装成功（记得把左边的摄像头功能开关打开）：
 
    <div aligne='center'>
-       <img src="./assets/figures/realsense-viewer1.png" width='49%'>
-       <img src="./assets/figures/realsense-viewer2.png" width='49%'>
+       <img src=./assets/figures/realsense-viewer1.png width=49%>
+       <img src=./assets/figures/realsense-viewer2.png width=49%>
    </div>
+   
    
    
 
