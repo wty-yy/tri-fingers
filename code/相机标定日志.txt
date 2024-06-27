@@ -1,0 +1,25 @@
+24.1.2
+
+修改了trifinger_datasets里sim_env.py文件
+#self.platform.wait_until_timeindex(t)  # type: ignore
+不然会报错，因为platform包没有wait_until_timeindex函数
+
+24.3.19
+docker run -it  --name realsense  --privileged --net=host --ipc=bridge --ipc=host --pid=host -v /dev/bus/usb:/dev/bus/usb   --env="DISPLAY"     --env="QT_X11_NO_MITSHM=1"     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"  -v /home/wq/sharefile:/sharefile   osrf/ros:noetic-desktop-full     rqt
+
+docker 配置ros ：https://blog.csdn.net/zysss_/article/details/134125740
+xhost +local:`docker inspect --format='{{ .Config.Hostname }}' $containerId`
+
+docker中使用realsense-ros  https://blog.csdn.net/weixin_42990464/article/details/129125270
+
+相机内参标定   https://github.com/ethz-asl/kalibr/wiki/multiple-camera-calibration
+坐标变换  https://blog.csdn.net/jiaoyangwm/article/details/97752238
+
+
+!!!!!issacgym core dump 原因 ：没有给vulkan指定 Nvidia显卡 ：export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
+https://blog.csdn.net/ggggfff1/article/details/135487322
+
+
+#向日葵
+/usr/local/sunlogin/bin/sunloginclient 
+

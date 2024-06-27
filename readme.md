@@ -100,7 +100,7 @@ $$
        -v "$FOLDER:/data" \  # 将/data转发到本地的数据保存路径
        kalibr  # 启动的镜像名称
    # 写成一行
-   docker run -it --privileged	--net=host -e "DISPLAY" -e "QT_X11_NO_MITSHM=1" -v "/dev:/dev" -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" -v "$FOLDER:/data" kalibr
+   docker run -it --privileged --net=host -e "DISPLAY" -e "QT_X11_NO_MITSHM=1" -v "/dev:/dev" -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" -v "$FOLDER:/data" kalibr
    ```
 
 5. Docker 环境变量加载：
@@ -123,6 +123,18 @@ $$
 #### 内参矩阵获取
 
  在 ROS 中将摄像头加入话题（ROS 是一个控制系统，需要将每个设备手动打开，打开后成为一个 node，使用 `rosnode list` 查看，每个 node 还具有很多相关 topic，可以获取其参数信息，通过 `rostopic list` 查看全部 topic，使用 `rostopic echo ${topic-name}` 获取话题具体信息，而打开 D435 摄像头就需要使用 realsense 安装的相关依赖包）， **内参获取**方法如下：
+
+相机分辨率需要先固定成和python获取到的一样，这里设置为 `1280x720`，修改 `rs_camera.launch` 中：
+
+```bash
+cd /opt/ros/noetic/share/realsense2_camera/launch/rs_camera.launch
+# 找到26行中，infra_width, infra_height 分别将后面的数字修改为 1280x720
+<arg name="infra_width"         default="1280"/>
+<arg name="infra_height"        default="720"/>
+# 找到33行中，color_width, color_height 分别将后面的数字修改为 1280x720
+<arg name="color_width"         default="1280"/>
+<arg name="color_height"        default="720"/>
+```
 
 执行 `roslaunch realsense2_camera rs_camera.launch` 将摄像头加入到 node，执行 `rostopic list` 查看（左图），并使用 `rostopic echo /camera/color/camera_info` （右图）：
 
@@ -211,3 +223,64 @@ Target configuration
 ```
 
 可以看出畸变参数为 `[ 0.1136323  -0.24918569 -0.00006587  0.00135696]`，其中前两个为径向畸变，后两个为切向畸变。对于内参矩阵，和 ROS+RealSense 直接读取出来的比较接近，但没有那个精确，我们还是使用直接读取出来的用于后续计算。
+
+### 外参标定
+
+使用**内参和畸变矩阵**可以得到从像素坐标系到相机坐标系的变换，再找到**旋转+平移**（仿射变换）矩阵就可以从相机坐标系到世界坐标系，因此首先需要搞懂（小孔成像模型中）三个坐标系的关系：
+
+![坐标系转换](./assets/figures/坐标系转换.png)
+
+像素坐标系：是以成像平面中心为原点的 $p\mbox{-} xy$ 二维坐标系，单位为像素，坐标记为 $(u,v)$。
+
+相机坐标系：是以小孔成像点作为原点的 $O\mbox{-}X_cY_cZ_c$ 三维坐标系，单位为米，坐标记为 $(x_c,y_c,z_c)$。
+
+世界坐标系：可以空间中任意一点为原点的 $O_w\mbox{-}X_wY_wZ_w$ 三位坐标系，单位米，坐标记为 $(x_w,y_w,z_w)$。
+
+> 注意：$z_c$ 就是深度相机中的深度图中的深度大小，单位米。
+
+在像素坐标系与相机坐标系的变换关系为
+$$
+\begin{bmatrix}
+u\\v\\1
+\end{bmatrix} =
+\begin{bmatrix}
+f_x&0&u_0\\
+0&f_y&v_0\\
+0&0&1
+\end{bmatrix}
+\begin{bmatrix}
+x_c/z_c\\y_c/z_c\\1
+\end{bmatrix} = A
+\begin{bmatrix}
+x_c'\\y_c'\\1
+\end{bmatrix}
+$$
+其中 $A$ 为内参矩阵，$x_c',y_c'$ 为畸变矫正前的归一化相机坐标，通过径向-切向畸变矫正公式：
+$$
+\begin{cases}
+x_c'\gets x_c'(1+k_1r^2+k_2r^4+k_3r^6)+2p_1xy+p_2(r^2+2x^2),\\
+y_c'\gets y_c'(1+k_1r^2+k_2r^4+k_3r^6)+p_1(r^2+2y^2)+2p_2xy.\\
+\end{cases}
+$$
+其中 $r^2=(x'_c)^2+(y'_c)^2$，然后可以得到矫正后的相机坐标系
+$$
+\begin{bmatrix}
+x_c\\y_c\\z_c
+\end{bmatrix} \gets
+\begin{bmatrix}
+x'_c\\y'_c\\1
+\end{bmatrix}z_c
+$$
+相机坐标系与世界坐标系的变换关系为
+$$
+\begin{bmatrix}
+x_w\\y_w\\z_w
+\end{bmatrix} = 
+R\begin{bmatrix}
+x_c\\y_c\\z_c
+\end{bmatrix} + T
+$$
+其中 $R$ 为旋转矩阵（正交阵且行列式为 $1$），$T$ 为平移向量，我们可以通过获取世界坐标系中的 $(0,0,0),(1,0,0),(0,1,0)$ 三个点在图像中的位置（图像识别），得到对应的相机坐标，进而通过如下方法，计算出 $R,T$ 
+
+- ` get_extri.py`：
+
