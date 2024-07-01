@@ -106,14 +106,39 @@ def calOrientationFrom2Vectors( Vs1, Vs2, Vn1, Vn2):
     return Rns
 
 # 已知相机的内参矩阵和畸变矩阵（示例值，需要替换为实际值）
-camera_matrix = np.array([[914.9191276677989, 0, 643.1500962950337],  #fx 0 cx; 0 fy cy; 0 0 1;
+#realsense D435
+Camera_matrix = np.array([[914.9191276677989, 0, 643.1500962950337],  #fx 0 cx; 0 fy cy; 0 0 1;
                           [0, 915.1587165967329, 359.53871968201054],
                           [0, 0, 1]])
 
-dist_coeffs = np.array([0.10927442315826, -0.23448282190486733, 0.0013576548645471817, 0.0010983563521488342, 0])
+Dist_coeffs = np.array([0.10927442315826, -0.23448282190486733, 0.0013576548645471817, 0.0010983563521488342, 0])
+Extri_R=np.asarray([[-0.45387007,  0.84991783,  0.00676841],
+                    [ 0.67944918,  0.40663435, -0.64432766],
+                    [-0.57649873, -0.33509429, -0.7647196 ]])
+Extri_T=np.asarray([[ 0.02923178],
+                    [-0.01699791],
+                     [ 0.501     ]])
 
-def image_to_camera(image_point, depth_value):
-    
+#realsense D435i
+Camera_matrix_2 = np.array([[908.2644653320321, 0, 650.677978515625],  #fx 0 cx; 0 fy cy; 0 0 1;
+                          [0, 907.4638671875, 370.1951904296875],
+                          [0, 0, 1]])
+
+Dist_coeffs_2 = np.array([0.06033341, -0.13972515, 0.0026527, -0.00139437, 0])
+Extri_R_2=np.asarray([[-0.49327975 ,-0.86636245 , 0.00491301],
+                    [-0.72441562 , 0.41275293, -0.55590733],
+                    [ 0.48155695, -0.28116033, -0.83122975]])
+Extri_T_2=np.asarray([[ 0.03859649],
+                        [-0.00691725],
+                        [ 0.495     ]])
+
+def image_to_camera(image_point, depth_value,cam_id):#camid:0-D435 1:D435i
+    if cam_id==0:
+        camera_matrix=Camera_matrix
+        dist_coeffs=Dist_coeffs
+    else:
+        camera_matrix=Camera_matrix_2
+        dist_coeffs=Dist_coeffs_2
     # 将图像坐标转换为归一化坐标
     normalized_point = np.linalg.inv(camera_matrix).dot(np.array([image_point[0], image_point[1], 1]))
 
@@ -135,29 +160,41 @@ def image_to_camera(image_point, depth_value):
     return np.array(camera_point)
 
 #model = YOLO("/home/amov/temptest/orange_s_v2.pt")
-'''
-extri_R=np.asarray([[-0.47745941,  0.83653434,  0.0111403 ],
-                    [ 0.66286799,  0.4215384,  -0.65178018],
-                    [-0.57674825, -0.35002241, -0.75832611]])
-extri_T=np.asarray([[ 0.03260845],
-                    [-0.01863098],
-                    [ 0.501     ]])
-'''
-extri_R=np.asarray([[-0.45387007,  0.84991783,  0.00676841],
-                    [ 0.67944918,  0.40663435, -0.64432766],
-                    [-0.57649873, -0.33509429, -0.7647196 ]])
-extri_T=np.asarray([[ 0.02923178],
-                    [-0.01699791],
-                     [ 0.501     ]])
-def image_to_earth(image_point,depth_value):
-    camera_point=image_to_camera(image_point,depth_value).reshape(3,1)
-    earth_point=np.linalg.inv(extri_R).dot(camera_point.reshape(3,1)-extri_T)
+
+
+def image_to_earth(image_point,depth_value,cam_name):
+    if cam_name=="Intel RealSense D435":
+        camera_point=image_to_camera(image_point,depth_value,0).reshape(3,1)
+        earth_point=np.linalg.inv(Extri_R).dot(camera_point.reshape(3,1)-Extri_T)
+    elif cam_name=="Intel RealSense D435I":
+        camera_point=image_to_camera(image_point,depth_value,1).reshape(3,1)
+        earth_point=np.linalg.inv(Extri_R_2).dot(camera_point.reshape(3,1)-Extri_T_2)
+    else:
+        print(cam_name)
+        exit()
     return np.array(earth_point)
 
+def earth_to_image(earth_point,cam_name):
+    earth_point=np.array(earth_point).reshape(3,1)
+    if cam_name=="Intel RealSense D435":
+        camera_point=Extri_R.dot(earth_point)+Extri_T
+        image_point=Camera_matrix.dot(camera_point/camera_point[2])
+    elif cam_name=="Intel RealSense D435I":
+        camera_point=Extri_R_2.dot(earth_point)+Extri_T_2
+        image_point=Camera_matrix_2.dot(camera_point/camera_point[2])
+    else:
+        print(cam_name)
+        exit()
+    return np.array([image_point[0],image_point[1]], np.int32).reshape(2)
 
+
+
+from scipy.spatial import distance
 
 
 if __name__=='__main__':
+    # print(earth_to_image([0,0,0.0325],"Intel RealSense D435"))
+    # exit()
     fps, w, h = 30, 1280, 720
     cam = Camera(w, h, fps)
     i=0
@@ -165,8 +202,7 @@ if __name__=='__main__':
         color_image, depth_image = cam.get_frame() # 读取图像帧，包括RGB图和深度图 
         result = cv2.blur(color_image, (4,4))
         gray=cv2.cvtColor(result,cv2.COLOR_BGR2GRAY)
-        # ret,gray=cv2.threshold(gray,180,255,cv2.THRESH_BINARY)  # 阈值二值化: 180
-        ret,gray=cv2.threshold(gray,230,255,cv2.THRESH_BINARY)
+        ret,gray=cv2.threshold(gray,230,255,cv2.THRESH_BINARY)  # 二值化阈值：默认为180
         cv2.imshow('gray', gray)
         circles= cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,50,param1=80,param2=10,minRadius=1,maxRadius=40)
         
@@ -198,7 +234,7 @@ if __name__=='__main__':
                 points[:,:2]=circles[0][:,0:2]
                 for idx in range(3):
                     points[idx,2]=depth_image[int(points[idx,1]),int(points[idx,0])]
-                    camera_points[idx]=image_to_camera(points[idx,0:2], points[idx,2])
+                    camera_points[idx]=image_to_camera(points[idx,0:2], points[idx,2],1)
                 print("图像坐标")
                 print(points)
                 print("相机坐标")
@@ -206,7 +242,9 @@ if __name__=='__main__':
                 Opoint=0
                 max_dis=0
                 for idx in range(3):
-                    dis=math.dist(points[idx-1],points[idx])
+                    
+                    dis=distance.euclidean(points[idx-1],points[idx])
+                    # dis=(points[idx-1][0]-points[idx][0])^2+(points[idx-1][0]-points[idx][0])^2
                     if dis>max_dis:
                         max_dis=dis
                         Opoint=(idx+1)%3
