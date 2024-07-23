@@ -38,6 +38,7 @@ if __name__ == "__main__":
             print("pos:",tcp_server.trifinger_state.dof_pos[0])
             #if np.abs(pid_controller.target_angle-feedback_angle)
             start_flag=0
+            time.sleep(1)  # 避免连续发出多次控制指令
                 
             if keyboard.is_pressed('q'):
                 print("stop!")

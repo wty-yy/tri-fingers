@@ -7,6 +7,7 @@ import time
 import numpy as np
 import tcp_server
 import math
+from pathlib import Path
 DevType = c_uint
 
 '''
@@ -78,7 +79,8 @@ cwdx = os.getcwd()
 class ECAN(object):
     def __init__(self):
         #self.dll = cdll.LoadLibrary(cwdx + '/ECanVci64.dll')
-        self.dll = cdll.LoadLibrary( R'D:\Code\Python\all\Gcan\ECanVci64.dll')
+        path_dll = str(Path(__file__).parent / "Gcan\ECanVci64.dll")
+        self.dll = cdll.LoadLibrary(path_dll)
         if self.dll == None:
             print("DLL Couldn't be loaded")
 

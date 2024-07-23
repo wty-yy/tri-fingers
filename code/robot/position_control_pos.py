@@ -188,10 +188,10 @@ def get_action():
     return action,obses
 @dataclass
 class Args:
-    checkpoint: str=R'D:\Code\Python\all\rl_models\sac_cube_noise_step310000_288.pt'
+    checkpoint: str=R'C:\Coding\trifingers\tri-fingers-github\PPO_SAC_model_weights\ppo_cube_noise.pth'
     device: str='cpu'
-    data_save: bool=True
-    script: str="SAC"
+    data_save: bool=False  # 保存真机数据
+    script: str="PPO"  # 与模型参数对应
 
 #仿真机器人关节  1 2 3 4 5 6 7 8 9
 #真实机器人关节  4 5 6 7 8 9 1 2 3

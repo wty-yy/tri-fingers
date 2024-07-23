@@ -6,8 +6,7 @@ import math
 import numpy as np
 import Gcan
 import math
-ADDRESS = ('192.168.1.146',  45472)  # 绑定地址
-# ADDRESS = ('127.0.0.1',  47910)  # 绑定地址
+ADDRESS = ('192.168.43.84',  123)  # 本机在局域网下的ipv4地址，端口随便给一个空置的
 
 g_socket_server = None  # 负责监听的socket
  
