@@ -1,4 +1,4 @@
-import socket  # 导入 socket 模块
+import socket
 from threading import Thread
 import time
 import json
@@ -6,6 +6,7 @@ import math
 import numpy as np
 import Gcan
 import math
+from typing import List
 ADDRESS = ('192.168.43.84',  123)  # 本机在局域网下的ipv4地址，端口随便给一个空置的
 
 g_socket_server = None  # 负责监听的socket
@@ -149,38 +150,52 @@ class Trifinger_state:       #41
         self.target_cube_state[0]=np.append(pose,quat)
         self.target_init=True
         print("target:",self.target_cube_state)
+    
+    def rad_action2real_action(self, action: list):
+        action=np.clip(action,self.dof_pos_low,self.dof_pos_high)
+        return np.multiply(np.subtract(action,self.dof_pos[0]),9/(2*math.pi))  # 电机转九圈关节转一圈
+    
     def motor_control(self,action:list):
         if len(action) !=9:
             print("action length wrong!")
         else:
-            action=np.clip(action,self.dof_pos_low,self.dof_pos_high)
+            action = self.rad_action2real_action(action)
+            threads: List[Thread] = []
+            start_time = time.time()
+            for i in range(5):
+                # motor_id: 1~5
+                threads.append(Thread(target=Gcan.sendcan1, args=(0, i+1, action[i])))
+                threads[-1].start()
+            for i in range(4):
+                # motor_id: 6~9
+                threads.append(Thread(target=Gcan.sendcan2, args=(0, i+6, action[i+5])))
+                threads[-1].start()
+            print("start_time=", time.time() - start_time)
+            start_time = time.time()
+            for t in threads:
+                t.join()
+            print("join_time=", time.time() - start_time)
+           
+            # Gcan.sendcan1(0,1,action[0])
+            # time.sleep(0.003)
+            # Gcan.sendcan1(0,2,action[1])
+            # time.sleep(0.003)
+            # Gcan.sendcan1(0,3,action[2])
+            # time.sleep(0.003)
             
+            # Gcan.sendcan1(0,4,action[3])
+            # time.sleep(0.003)
+            # Gcan.sendcan1(0,5,action[4])
+            # time.sleep(0.003)
+            # Gcan.sendcan2(0,6,action[5])
+            # time.sleep(0.003)
             
-
-            action=np.multiply(np.subtract(action,self.dof_pos[0]),9/(2*math.pi))
-            #print(action)
-            
-            
-            Gcan.sendcan1(0,1,action[0])
-            time.sleep(0.003)
-            Gcan.sendcan1(0,2,action[1])
-            time.sleep(0.003)
-            Gcan.sendcan1(0,3,action[2])
-            time.sleep(0.003)
-            
-            Gcan.sendcan1(0,4,action[3])
-            time.sleep(0.003)
-            Gcan.sendcan1(0,5,action[4])
-            time.sleep(0.003)
-            Gcan.sendcan2(0,6,action[5])
-            time.sleep(0.003)
-            
-            Gcan.sendcan2(0,7,action[6])
-            time.sleep(0.003)
-            Gcan.sendcan2(0,8,action[7])
-            time.sleep(0.003)
-            Gcan.sendcan2(0,9,action[8])
-            time.sleep(0.003)
+            # Gcan.sendcan2(0,7,action[6])
+            # time.sleep(0.003)
+            # Gcan.sendcan2(0,8,action[7])
+            # time.sleep(0.003)
+            # Gcan.sendcan2(0,9,action[8])
+            # time.sleep(0.003)
             
     def input_normalize(self,val,high,low):
         #print(val,high,low)

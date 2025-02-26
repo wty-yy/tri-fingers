@@ -403,7 +403,7 @@ def sendcan2(Id:int,motor_id:int,torque_data:float):
         canobj.data[1] = 0
         canobj.data[2] = 0
         canobj.data[3] = motor_id
-        Bytes=list(struct.pack('>f',torque_data))
+        Bytes=list(struct.pack('>f',torque_data))  # float32=4bytes
         canobj.data[4] = Bytes[0]
         canobj.data[5] = Bytes[1]
         canobj.data[6] = Bytes[2]

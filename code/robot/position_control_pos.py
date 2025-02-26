@@ -163,11 +163,11 @@ def get_action():
     target_cube_state_normalize=trifinger_state.input_normalize(trifinger_state.target_cube_state[0],trifinger_state.cube_state_high,trifinger_state.cube_state_low)
     dof_vel_normalize=np.clip(dof_vel_normalize,trifinger_state.dof_vel_low,trifinger_state.dof_vel_high)
     
-    obses=np.append(dof_pos_normalize,dof_vel_normalize)
-    obses=np.append(obses,cube_state_normalize)
-    obses=np.append(obses,target_cube_state_normalize)
-    obses=np.append(obses,trifinger_state.last_action[0])  
-    obses=torch.tensor(obses,dtype=torch.float32).unsqueeze(0).to(device)
+    obses=np.append(dof_pos_normalize,dof_vel_normalize)  # (18,)
+    obses=np.append(obses,cube_state_normalize)  # (7,)
+    obses=np.append(obses,target_cube_state_normalize)  # (7,)
+    obses=np.append(obses,trifinger_state.last_action[0])  # (9,)
+    obses=torch.tensor(obses,dtype=torch.float32).unsqueeze(0).to(device)  # (41,)
     obses[:,9:18]=0  #将速度mask掉 同仿真对齐
     if obses.shape!=(1,41):
         print(f"the shape of obs is wrong:{obses.shape}")
